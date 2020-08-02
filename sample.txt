@@ -1,0 +1,69 @@
+#page
+Welcome to a short sample presentation about the #sub#pdf-to-video#pdf2video# tool.
+This video is produced automatically with the tool.
+You can find more details in the github page of the project.
+#20
+#page
+Need to make videos of your @PDF@ presentations?
+Tired in spending *hours* in recording and editing the audio tracks?
+#10
+The #sub#pdf-to-video#pdf2video# tool can help you!
+It is a small tool, written in the Python programming language,
+for making videos from @PDF@ presentations.
+As input, it takes a @PDF@ presentation and a textual script file.
+The presentation is then turned into a video,
+narrated by the Amazon Polly text-to-speech engine.
+#10
+In order to use the tool,
+you should have some common @PDF@ and video tools installed in your computer.
+In addition, you should have access to Amazon Web Services.
+#20
+#page
+The use of the tool should be rather simple.
+One just provides the names of the inputs,
+the @PDF@ file and the script file,
+as well as the name of the output video file.
+#10
+The tool also provides a number of options.
+For instance, one can select only some of the @PDF@ pages
+to be included in the video.
+This makes it easier to split a long presentation into a set of shorter videos.
+#10
+In addition, the narration voice can be changed.
+For #high#instance#, #low#this sample video# is produced
+with the command shown in the slide.
+One can find the sample @PDF@ and script files
+in the github repository of the project.
+#30
+#page
+The script files are rather simple text files.
+They should be easy to produce with *any* text editor.
+#10
+For each @PDF@ page to be included in the video,
+the file contains a special header line,
+followed by the actual script text.
+#10
+In the text, some simple formatting commands can be used.
+For instance,
+one can make some text to be *#ph#read#red# in an emphasized style*.
+#10
+Similarly, one can make breaks of arbitrary lengths.
+#40
+
+#page
+Subtitles are automatically generated from the script file.
+#10
+They can be customized with the #sub!hash-sub!#sub! modifier,
+which can be combined with the reading style modifiers.
+#20
+For instance,
+consider the example shown here.
+#30
+It is read as
+"big-#ph#Theta#Ti:t# of @n@ squared"
+#10
+but the subtitles show #sub#the same in a mathematical form#Θ(n^2)#.
+#40
+That's all for this sample presentation!
+Please find more details in the github page of the tool.
+#20
