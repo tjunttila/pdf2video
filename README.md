@@ -8,6 +8,9 @@
 into a video narrated by the [Amazon Polly](https://aws.amazon.com/polly/) text-to-speech engine.
 It can be used to generate, for instance, educational videos.
 
+Please see this [sample video](https://users.aalto.fi/tjunttil/pdf2video.mp4),
+produced with the tool, for a short introduction.
+
 # Requirements
 
 Using `pdf2video.py` requires the following external tools and services:
@@ -26,7 +29,8 @@ python3 pdf2video.py presentation.pdf script.txt video.mp4
 ```
 converts the PDF file  `presentation.pdf` and the script `script.txt` into
 the video `video.mp4` narrated by the default voice (Amazon Polly standard voice Joanna in the current version).
-The selected PDF pages as well as the narration voice can be changed easily, for instance, as follows:
+The selected PDF pages as well as the narration voice can be changed easily.
+For instance, the [sample video](https://users.aalto.fi/tjunttil/pdf2video.mp4) was produced witth the command
 ```
 python3 pdf2video.py sample.pdf sample.txt --pages "1,2,4-6" --voice Matthew --neural --conversational sample.mp4
 ```

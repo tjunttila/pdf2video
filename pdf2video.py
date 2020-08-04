@@ -194,7 +194,7 @@ if __name__ == '__main__':
         except Exception as err:
             error(f'Error when executing "{cmd}".\n'+str(err))
         if r.returncode != 0:
-            print(" ".join(r.args))
+            #print(" ".join(r.args))
             error(f'Error when executing "{cmd}". The last 10 lines of the stderr output is as follows:\n' + '\n'.join((r.stderr.decode('utf-8').split('\n'))[-11:]))
         return r
     def make_dir(dir_name):
