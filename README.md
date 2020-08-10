@@ -29,6 +29,9 @@ python3 pdf2video.py presentation.pdf script.txt video.mp4
 ```
 converts the PDF file  `presentation.pdf` and the script `script.txt` into
 the video `video.mp4` narrated by the default voice (Amazon Polly standard voice Joanna in the current version).
+The video includes SRT subtitles that can be displayed by most video players.
+In addition, for HTML use, [WebVTT subtitles](https://www.w3schools.com/tags/tag_track.asp) are produced in a separate file as well.
+
 The selected PDF pages as well as the narration voice can be changed easily.
 For instance, the [sample video](https://users.aalto.fi/tjunttil/pdf2video.mp4) was produced witth the command
 ```

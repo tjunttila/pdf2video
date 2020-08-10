@@ -203,6 +203,8 @@ if __name__ == '__main__':
                 error("Not a directory: "+dir_name)
         else: os.mkdir(dir_name)
 
+    if not args.output_file.endswith(".mp4"):
+        error("The output file name must end with .mp4")
     
     pages = parse_page_range(args, execute, error)
     
@@ -355,5 +357,12 @@ if __name__ == '__main__':
             f.write(f'file {ts_file}\n')
     cmd = f'ffmpeg -y -f concat -i {lst_file} -c:v copy -c:a aac -c:s copy -strict -2 {args.output_file}'
     execute(cmd)
+
+    # Produce the WebVTT subtitles (for HTML)
+    vtt_file = args.output_file[:-4]+'.vtt'
+    verbose(f'Producing WebVTT subtitles at "{vtt_file}"')
+    cmd = f'ffmpeg -y -i {args.output_file} {vtt_file}'
+    execute(cmd)
+
     clean_temps()
     exit(0)
