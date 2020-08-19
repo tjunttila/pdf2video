@@ -212,7 +212,7 @@ def parse_(string):
                 result.append(ASTDelim(m.group(0)))
                 i += len(m.group(0))
                 continue
-            word = read_until([' ','\t','#','*','@'])
+            word = read_until([' ','\t','#','*','@','"','.',',',':',';','!','?'])
             result.append(ASTWord(word))
     return result
 
