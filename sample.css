@@ -1,0 +1,12 @@
+video {
+    border-style: solid;
+    border-width: 2pt;
+    border-color: #002F6C;
+    border-radius: 5pt;
+}
+::cue {
+    font-size: 20pt;
+    color: white;
+    background-color: #002F6C;
+    opacity: 0.8;
+}
