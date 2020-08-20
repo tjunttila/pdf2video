@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>pdf2video - an example</title>
+</head>
+<body>
+  <p>
+    This HTML page shows how one can embed videos
+    made with the <a href="https://github.com/tjunttila/pdf2video/" target="_blank">pdf2video</a> tool in web pages.
+    <a href="https://en.wikipedia.org/wiki/WebVTT" target="_blank">WebVTT</a> subtitles are supported by the tool.
+  </p>
+  <video width="721" height="540" controls style="border-style:solid;border-width:2pt;border-color:#002F6C;border-radius:5pt;">
+  <source src="sample.mp4" type="video/mp4">
+  <track src="sample.vtt" kind="subtitles" srclang="en" label="English" default>
+  Your browser does not support the video tag.
+</video> 
+</body>
+</html>
