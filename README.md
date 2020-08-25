@@ -27,13 +27,14 @@ In the simplest case,
 ```
 python3 pdf2video.py presentation.pdf script.txt video.mp4
 ```
-converts the PDF file  `presentation.pdf` and the script `script.txt` into
-the video `video.mp4` narrated by the default voice (Amazon Polly standard voice Joanna in the current version).
+converts the PDF file  `presentation.pdf` and
+the UTF-8 encoded script file `script.txt`
+into the video `video.mp4` narrated by the default voice (Amazon Polly standard voice Joanna in the current version).
 The video includes SRT subtitles that can be displayed by most video players.
 In addition, for HTML use, [WebVTT subtitles](https://www.w3schools.com/tags/tag_track.asp) are produced in a separate file as well.
 
 The selected PDF pages as well as the narration voice can be changed easily.
-For instance, the [sample video](https://users.aalto.fi/tjunttil/pdf2video.mp4) was produced witth the command
+For instance, the [sample video](https://users.aalto.fi/tjunttil/pdf2video.mp4) was produced with the command
 ```
 python3 pdf2video.py sample.pdf sample.txt --pages "1,2,4-6" --voice Matthew --neural --conversational sample.mp4
 ```
@@ -42,7 +43,7 @@ All the options can be printed with `python3 pdf2video.py --help`.
 The script file is formatted as follows.
 The script for each presentation page starts with a line `#page` and
 the following text then contains the script.
-In the script text, one can use
+In the script text, one can use the following modifiers:
 
 * `*text*` to read `text` in an emphasized style,
 * `@xyz@` to spell `xyz` as characters,
@@ -50,7 +51,13 @@ In the script text, one can use
 * `#low/text/` to use lower pitch for `text`,
 * `#n`, where `n` is a positive integer, to have a pause of length of `n`*100ms,
 * `#ph/word/pronunciation/` spell the `word` with the [X-SAMPA](https://en.wikipedia.org/wiki/X-SAMPA) `pronunciation`, and
-* `#sub/text/subtitle/` to use `subtitle` as the subtitle instead of the spoken `text`,
+* `#sub/text/subtitle/` to use `subtitle` as the subtitle instead of the spoken `text`.
+
+Above, the `/` delimiter can be any other symbol not occurring in the "arguments" of the modifier.
+This allows one to nest modifiers.
+For instance,
+`#sub/big-#ph!Theta!Ti:t! of @n@/Θ(n)/`
+reads as "big-theta of n" but shows as `Θ(n)` in the subtitles.
 
 Please see the file [sample.txt](sample.txt) file for examples.
 

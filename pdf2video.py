@@ -96,7 +96,7 @@ def read_scripts(script_file, error):
     script = []
     in_script = False
     try:
-        with open(script_file, 'r') as f:
+        with open(script_file, 'r', encoding='utf-8') as f:
             for line in f.readlines():
                 line = line.rstrip()
                 if re.match(r'^#page\s*', line):
@@ -243,13 +243,13 @@ if __name__ == '__main__':
         (ssml, hash_hex) = script_to_ssml_and_hash(script, args)
         ssml_file = f'{args.temp_prefix}-{index+1}.ssml'
         temp_ssml_files.append(ssml_file)
-        with open(ssml_file, "w") as f:
+        with open(ssml_file, "w", encoding='utf-8') as f:
             f.write(ssml)
         audio_file = os.path.join(args.audio_cache, hash_hex+".mp3")
         marks_file = os.path.join(args.audio_cache, hash_hex+".mrk")
         if False:
             plain_file = os.path.join(args.audio_cache, hash_hex+".txt")
-            with open(plain_file, "w") as f:
+            with open(plain_file, "w", encoding='utf-8') as f:
                 f.write(plain)
         # Use Polly to generate the MP3 file if not in cache
         if os.path.isfile(audio_file):
@@ -279,7 +279,7 @@ if __name__ == '__main__':
         # Read the speech marks
         marks_file = marks_files[index]
         marks = []
-        with open(marks_file, 'r') as f:
+        with open(marks_file, 'r', encoding='utf-8') as f:
             for line in f.readlines():
                 mark = json.loads(line)
                 if mark['type'] != 'word': continue
@@ -325,7 +325,7 @@ if __name__ == '__main__':
             index = index_end
 
         srt_file = marks_file[:-4] + '.srt'
-        with open(srt_file, 'w') as f:
+        with open(srt_file, 'w', encoding='utf-8') as f:
             for (index, srt) in enumerate(srts):
                 f.write(f'{index+1}\n')
                 f.write(millis_to_srt(srt['start'])+' --> '+millis_to_srt(srt['end'])+'\n')
@@ -353,7 +353,7 @@ if __name__ == '__main__':
     # Combine the transport streams
     verbose(f'Combining the transport streams to "{args.output_file}"')
     lst_file = f'{args.temp_prefix}.lst'
-    with open(lst_file, 'w') as f:
+    with open(lst_file, 'w', encoding='utf-8') as f:
         for ts_file in temp_ts_files:
             f.write(f'file {ts_file}\n')
     cmd = f'ffmpeg -y -f concat -i {lst_file} -c:v copy -c:a aac -c:s copy -strict -2 {args.output_file}'
