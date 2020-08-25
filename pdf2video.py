@@ -153,7 +153,7 @@ if __name__ == '__main__':
                    help='use neural TTS')
     p.add_argument('--conversational', action='store_true',
                    help='use conversational style')
-    p.add_argument('--aws_profile', metavar='P', default='PollyUser',
+    p.add_argument('--aws_profile', metavar='P', default='default',
                    help='a Polly-enabled AWS profile')
     p.add_argument('--audio_cache', metavar='A', default='pdf2video-cache',
                    help='the directory for caching TTS audio files')
@@ -237,6 +237,7 @@ if __name__ == '__main__':
     # Make audio files with AWS Polly (cache the results)
     audio_files = []
     marks_files = []
+    profile_arg = '' if args.aws_profile == 'default' else f'--profile {args.aws_profile}'
     for (index, script) in enumerate(scripts):
         verbose('Making the audio track %d' % (index+1))
         (ssml, hash_hex) = script_to_ssml_and_hash(script, args)
@@ -255,7 +256,7 @@ if __name__ == '__main__':
             verbose('  Audio file found in cache')
         else:
             verbose('  Calling Polly for the audio file')
-            cmd = f'aws --profile {args.aws_profile} polly synthesize-speech --text-type ssml --text file://{ssml_file} --output-format mp3 --voice-id {args.voice}'
+            cmd = f'aws {profile_arg} polly synthesize-speech --text-type ssml --text file://{ssml_file} --output-format mp3 --voice-id {args.voice}'
             if args.neural: cmd += ' --engine neural'
             cmd += f' {audio_file}'
             execute(cmd)
@@ -265,7 +266,7 @@ if __name__ == '__main__':
             verbose('  Speech marks found in cache')
         else:
             verbose('  Calling Polly for speech marks')
-            cmd = f'aws --profile {args.aws_profile} polly synthesize-speech --text-type ssml --text file://{ssml_file} --output-format json --speech-mark-types sentence word viseme ssml  --voice-id {args.voice}'
+            cmd = f'aws {profile_arg} polly synthesize-speech --text-type ssml --text file://{ssml_file} --output-format json --speech-mark-types sentence word viseme ssml  --voice-id {args.voice}'
             if args.neural: cmd += ' --engine neural'
             cmd += f' {marks_file}'
             execute(cmd)
