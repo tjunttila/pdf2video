@@ -15,7 +15,7 @@ produced with the tool, for a short introduction.
 
 Using `pdf2video.py` requires the following external tools and services:
 
-* [Python](https://www.python.org/) version 3.5 or later.
+* [Python](https://www.python.org/) version 3.6 or later.
 * The `pdfinfo` and `pdftoppm` command line tools provided in the [poppler PDF rendering library](https://poppler.freedesktop.org/). In Ubuntu Linux, you can install these with `sudo apt get poppler-utils`.
 * The `ffmpeg` command line tool from the [`FFmpeg`](https://ffmpeg.org/) framework. In Ubuntu Linux, you can install these with `sudo apt get ffmpeg`.
 * Access to [Amazon Web Services](https://aws.amazon.com/).
