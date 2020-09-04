@@ -99,6 +99,8 @@ def read_scripts(script_file, error):
         with open(script_file, 'r', encoding='utf-8') as f:
             for line in f.readlines():
                 line = line.rstrip()
+                if re.match(r'^%', line):
+                    continue
                 if re.match(r'^#page\s*', line):
                     if in_script:
                         scripts.append(script)
@@ -293,7 +295,7 @@ if __name__ == '__main__':
             if line.strip() == '': continue
             (dummy, words, sub) = parser.parse(line, args.neural)
             if len(words) == 0: continue
-            #print(words[0])
+            #print(words)
             #print(marks)
             #print(marks[index])
             #print([m['value'] for m in marks[index:index+len(words)]])

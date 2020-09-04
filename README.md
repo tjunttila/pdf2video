@@ -43,6 +43,7 @@ All the options can be printed with `python3 pdf2video.py --help`.
 The script file is formatted as follows.
 The script for each presentation page starts with a line `#page` and
 the following text then contains the script.
+A line starting with `%` is a comment and thus ignored.
 In the script text, one can use the following modifiers:
 
 * `*text*` to read `text` in an emphasized style,
