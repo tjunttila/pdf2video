@@ -134,9 +134,15 @@ def script_to_ssml_and_hash(script, args):
     if args.conversational:
         ssml += '<amazon:domain name="conversational">'
     ssml += '\n'
-    for line in script:
+    for (linenum,line) in enumerate(script):
         ast = parser.parse_(line)
-        l_ssml = ''.join([node.to_ssml(args.neural) for node in ast]) + '\n'
+        l_ssml = ''
+        # Start-of-the-line marks for subtitle synchronization
+        l_ssml += f'<mark name="s{linenum}"/>'
+        # Line contents in SSML
+        l_ssml += ''.join([node.to_ssml(args.neural) for node in ast])+'\n'
+        # End-of-the-line marks for subtitle synchronization
+        l_ssml += f'<mark name="e{linenum}"/>'
         ssml += l_ssml
         h.update(l_ssml.encode('utf-8')) 
     if args.conversational:
@@ -278,53 +284,32 @@ if __name__ == '__main__':
     # Make srt subtitles
     #
     for (index, script) in enumerate(scripts):
-        # Read the speech marks
+        # Read the speech marks, keep only the start and end-of-the-line marks
         marks_file = marks_files[index]
-        marks = []
+        starts = {}
+        ends = {}
         with open(marks_file, 'r', encoding='utf-8') as f:
             for line in f.readlines():
                 mark = json.loads(line)
-                if mark['type'] != 'word': continue
-                if mark['value'].startswith('<break'): continue
-                marks.append(mark)
-        #print([m['value'] for m in marks])
-
+                if mark['type'] != 'ssml': continue
+                m = re.match('^s(?P<num>\d+?)$', mark['value'])
+                if m != None:
+                    starts[int(m['num'])] = mark['time']
+                m = re.match('^e(?P<num>\d+?)$', mark['value'])
+                if m != None:
+                    ends[int(m['num'])] = mark['time']
+        #print(starts)
+        #print(ends)
         srts = []
         index = 0
-        for line in script:
+        for (linenum,line) in enumerate(script):
+            #print(linenum, line)
             if line.strip() == '': continue
+            start = starts[linenum]
+            end = ends[linenum]
             (dummy, words, sub) = parser.parse(line, args.neural)
             if len(words) == 0: continue
-            #print(words)
-            #print(marks)
-            #print(marks[index])
-            #print([m['value'] for m in marks[index:index+len(words)]])
-            if words[0] != marks[index]['value'] and words[0][:-1] != marks[index]['value'] and words[0][1:] != marks[index]['value']:
-                #print(words[0], marks[index]['value'])
-                p.error(f'Subtitle synchronization failed: "{words[0]}" vs "{marks[index]["value"]}"')
-            # For some reason, "5 seconds" is considered one work in Polly
-            # so index_end = index + len(words) does not quite work
-            index_end = index
-            read = 0
-            while read < len(words) and index_end < len(marks):
-                read += len(re.split('\s+', marks[index_end]['value']))
-                index_end += 1
-
-            
-            start = marks[index]['time']
-            end = marks[index_end-1]['time']
-            #end = marks[index+len(words)-1]['time']
-            if len(srts) > 0:
-                prev = srts[-1]
-                prev['end'] = min(prev['end']+1000, start-10)
             srts.append({'start': start, 'end': end, 'text': sub})
-            # For some reason, "5 seconds" is considered one work in Polly
-            # so index += len(words) does not quite work
-            #read = 0
-            #while read < len(words) and index < len(marks):
-            #    read += len(re.split('\s+', marks[index]['value']))
-            #    index += 1
-            index = index_end
 
         srt_file = marks_file[:-4] + '.srt'
         with open(srt_file, 'w', encoding='utf-8') as f:
@@ -333,7 +318,7 @@ if __name__ == '__main__':
                 f.write(millis_to_srt(srt['start'])+' --> '+millis_to_srt(srt['end'])+'\n')
                 f.write(srt['text']+'\n')
                 f.write('\n')
-    
+                
     # Combine images and audios to transport streams
     for (index, page_num) in enumerate(pages):
         verbose(f'Combining PDF page and audio: {index+1}')
