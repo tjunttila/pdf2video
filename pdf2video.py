@@ -167,6 +167,8 @@ if __name__ == '__main__':
                    help='the directory for caching TTS audio files')
     p.add_argument('--temp_prefix', metavar='T', default='temp',
                    help='the prefix for the created temporary files')
+    p.add_argument('--ignore_subtitles', action='store_true',
+                   help='do not include or produce subtitles')
     p.add_argument('--quiet', action='store_true',
                    help='do not print progress information')
     p.add_argument('--pages', metavar='P', default='all',
@@ -269,55 +271,57 @@ if __name__ == '__main__':
             cmd += f' {audio_file}'
             execute(cmd)
         audio_files.append(audio_file)
-        # Use Polly to generate the speech marks JSON file if not in cache
-        if os.path.isfile(marks_file):
-            verbose('  Speech marks found in cache')
-        else:
-            verbose('  Calling Polly for speech marks')
-            cmd = f'aws {profile_arg} polly synthesize-speech --text-type ssml --text file://{ssml_file} --output-format json --speech-mark-types sentence word viseme ssml  --voice-id {args.voice}'
-            if args.neural: cmd += ' --engine neural'
-            cmd += f' {marks_file}'
-            execute(cmd)
-        marks_files.append(marks_file)
+        if not args.ignore_subtitles:
+            # Use Polly to generate the speech marks JSON file if not in cache
+            if os.path.isfile(marks_file):
+                verbose('  Speech marks found in cache')
+            else:
+                verbose('  Calling Polly for speech marks')
+                cmd = f'aws {profile_arg} polly synthesize-speech --text-type ssml --text file://{ssml_file} --output-format json --speech-mark-types sentence word viseme ssml  --voice-id {args.voice}'
+                if args.neural: cmd += ' --engine neural'
+                cmd += f' {marks_file}'
+                execute(cmd)
+            marks_files.append(marks_file)
 
-    #
-    # Make srt subtitles
-    #
-    for (index, script) in enumerate(scripts):
-        # Read the speech marks, keep only the start and end-of-the-line marks
-        marks_file = marks_files[index]
-        starts = {}
-        ends = {}
-        with open(marks_file, 'r', encoding='utf-8') as f:
-            for line in f.readlines():
-                mark = json.loads(line)
-                if mark['type'] != 'ssml': continue
-                m = re.match('^s(?P<num>\d+?)$', mark['value'])
-                if m != None:
-                    starts[int(m['num'])] = mark['time']
-                m = re.match('^e(?P<num>\d+?)$', mark['value'])
-                if m != None:
-                    ends[int(m['num'])] = mark['time']
-        #print(starts)
-        #print(ends)
-        srts = []
-        index = 0
-        for (linenum,line) in enumerate(script):
-            #print(linenum, line)
-            if line.strip() == '': continue
-            start = starts[linenum]
-            end = ends[linenum]
-            (dummy, words, sub) = parser.parse(line, args.neural)
-            if len(words) == 0: continue
-            srts.append({'start': start, 'end': end, 'text': sub})
+    if not args.ignore_subtitles:
+        #
+        # Make srt subtitles
+        #
+        for (index, script) in enumerate(scripts):
+            # Read the speech marks, keep only the start and end-of-the-line marks
+            marks_file = marks_files[index]
+            starts = {}
+            ends = {}
+            with open(marks_file, 'r', encoding='utf-8') as f:
+                for line in f.readlines():
+                    mark = json.loads(line)
+                    if mark['type'] != 'ssml': continue
+                    m = re.match('^s(?P<num>\d+?)$', mark['value'])
+                    if m != None:
+                        starts[int(m['num'])] = mark['time']
+                    m = re.match('^e(?P<num>\d+?)$', mark['value'])
+                    if m != None:
+                        ends[int(m['num'])] = mark['time']
+            #print(starts)
+            #print(ends)
+            srts = []
+            index = 0
+            for (linenum,line) in enumerate(script):
+                #print(linenum, line)
+                if line.strip() == '': continue
+                start = starts[linenum]
+                end = ends[linenum]
+                (dummy, words, sub) = parser.parse(line, args.neural)
+                if len(words) == 0: continue
+                srts.append({'start': start, 'end': end, 'text': sub})
 
-        srt_file = marks_file[:-4] + '.srt'
-        with open(srt_file, 'w', encoding='utf-8') as f:
-            for (index, srt) in enumerate(srts):
-                f.write(f'{index+1}\n')
-                f.write(millis_to_srt(srt['start'])+' --> '+millis_to_srt(srt['end'])+'\n')
-                f.write(srt['text']+'\n')
-                f.write('\n')
+            srt_file = marks_file[:-4] + '.srt'
+            with open(srt_file, 'w', encoding='utf-8') as f:
+                for (index, srt) in enumerate(srts):
+                    f.write(f'{index+1}\n')
+                    f.write(millis_to_srt(srt['start'])+' --> '+millis_to_srt(srt['end'])+'\n')
+                    f.write(srt['text']+'\n')
+                    f.write('\n')
                 
     # Combine images and audios to transport streams
     for (index, page_num) in enumerate(pages):
@@ -327,15 +331,18 @@ if __name__ == '__main__':
         audio_file = audio_files[index]
         cmd = f'ffmpeg -y -loop 1 -i {temp_image_files[index]} -i {audio_file} -shortest -c:v libx264 -vf scale=-2:1080,format=yuv420p -c:a copy -tune stillimage d{ts_file}'
         execute(cmd)
-        verbose(f'  Adding subtitles')
-        srt_file = audio_file[:-4] + '.srt'
-        if os.stat(srt_file).st_size == 0:
-            os.rename(f'd{ts_file}', f'{ts_file}')
+        if args.ignore_subtitles:
+            os.rename(f'd{ts_file}', f'{ts_file}')            
         else:
-            #ffmpeg -i infile.mp4 -i infile.srt -c copy -c:s mov_text outfile.mp4
-            cmd = f'ffmpeg -y -i d{ts_file} -i {srt_file} -c copy -c:s mov_text -metadata:s:s:0 language=eng {ts_file}'
-            execute(cmd)
-            unlink(f'd{ts_file}')
+            verbose(f'  Adding subtitles')
+            srt_file = audio_file[:-4] + '.srt'
+            if os.stat(srt_file).st_size == 0:
+                os.rename(f'd{ts_file}', f'{ts_file}')
+            else:
+                #ffmpeg -i infile.mp4 -i infile.srt -c copy -c:s mov_text outfile.mp4
+                cmd = f'ffmpeg -y -i d{ts_file} -i {srt_file} -c copy -c:s mov_text -metadata:s:s:0 language=eng {ts_file}'
+                execute(cmd)
+                unlink(f'd{ts_file}')
         
     # Combine the transport streams
     verbose(f'Combining the transport streams to "{args.output_file}"')
@@ -346,11 +353,12 @@ if __name__ == '__main__':
     cmd = f'ffmpeg -y -f concat -i {lst_file} -c:v copy -c:a aac -c:s copy -strict -2 {args.output_file}'
     execute(cmd)
 
-    # Produce the WebVTT subtitles (for HTML)
-    vtt_file = args.output_file[:-4]+'.vtt'
-    verbose(f'Producing WebVTT subtitles at "{vtt_file}"')
-    cmd = f'ffmpeg -y -i {args.output_file} {vtt_file}'
-    execute(cmd)
+    if not args.ignore_subtitles:
+        # Produce the WebVTT subtitles (for HTML)
+        vtt_file = args.output_file[:-4]+'.vtt'
+        verbose(f'Producing WebVTT subtitles at "{vtt_file}"')
+        cmd = f'ffmpeg -y -i {args.output_file} {vtt_file}'
+        execute(cmd)
 
     clean_temps()
     exit(0)
