@@ -3,7 +3,7 @@ Welcome to a short sample presentation about the #sub#pdf-to-video#pdf2video# to
 This video is produced automatically with the tool.
 You can find more details in the github page of the project.
 #20
-#page
+#page motivation
 Need to make videos of your @PDF@ presentations?
 Tired in spending *hours* in recording and editing the audio tracks?
 #10
@@ -18,7 +18,7 @@ In order to use the tool,
 you should have some common @PDF@ and video tools installed in your computer.
 In addition, you should have access to Amazon Web Services.
 #20
-#page
+#page usage
 The use of the tool should be rather simple.
 One just provides the names of the inputs,
 the @PDF@ file and the script file,
@@ -35,7 +35,7 @@ with the command shown in the slide.
 One can find the sample @PDF@ and script files
 in the github repository of the project.
 #30
-#page
+#page scripts_1
 The script files are rather simple text files.
 They should be easy to produce with *any* text editor.
 #10
@@ -50,7 +50,7 @@ one can make some text to be *#ph#read#red# in an emphasized style*.
 Similarly, one can make breaks of arbitrary lengths.
 #40
 
-#page
+#page scripts_2
 Subtitles are automatically generated from the script file.
 #10
 They can be customized with the #sub!hash-sub!#sub! modifier,

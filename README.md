@@ -41,9 +41,11 @@ python3 pdf2video.py sample.pdf sample.txt --pages "1,2,4-6" --voice Matthew --n
 All the options can be printed with `python3 pdf2video.py --help`.
 
 The script file is formatted as follows.
-The script for each presentation page starts with a line `#page` and
-the following text then contains the script.
+The script for each presentation page starts with a line `#page [name]` and
+the following text then contains the script. The optional `[name]` parameter, that can be used in the `--only` option of the tool, is a string of ascii letters and underscores, possibly followed by a non-negative number. For instance `defs` and `example_3` are valid names.
+
 A line starting with `%` is a comment and thus ignored.
+
 In the script text, one can use the following modifiers:
 
 * `*text*` to read `text` in an emphasized style,

@@ -88,22 +88,76 @@ def parse_page_range(args, execute, error):
     return pages
 
         
+def parse_only(args, scripts, scripts_names, error):
+    """
+    Parse the 'only' range.
+    """
+    only = set()
+    if args.only == 'the full set':
+        # --only parameter was not given
+        # Include all the #pages
+        for i in range(0, len(scripts)):
+            only.add(i)
+        return only
+    # --only parameter was given, parse it
+    for comp in [c.strip() for c in args.only.split(",")]:
+        m = re.match(r'^[1-9]\d*$', comp)
+        if m:
+            num = int(m.group(0))
+            if not(num <= len(scripts)):
+                error(f'#page {num} was selected in --only, but only {len(scripts)} #pages exists')
+            only.add(num-1)
+            continue
+        m = re.match(r'^[a-zA-Z_]+([1-9]\d*)?$', comp)
+        if m:
+            name = m.group(0)
+            if name not in scripts_names:
+                error(f'#page named "{name}" was selected in --only, but there is no #page with that name. Available #page names are: {",".join(sorted(scripts_names.keys()))}')
+            only.add(scripts_names[name])
+            continue
+        m = re.match(r'^([a-zA-Z_]+)([1-9]\d*)-([1-9]\d*)$', comp)
+        if m:
+            (base,start,end) = (m.group(1),int(m.group(2)),int(m.group(3)))
+            length = end - start + 1
+            if length > 0 and length < 10000:
+                for i in range(start, end+1):
+                    name = base+str(i)
+                    if name not in scripts_names:
+                        error(f'#page named "{name}" was selected in --only, but there is no #page with that name. Available #page names are: {",".join(sorted(scripts_names.keys()))}')
+                    only.add(scripts_names[name])
+
+                    pages.append(i)
+                continue
+        error('Invalid "only" range component: '+comp)
+    return only
+
+        
 def read_scripts(script_file, error):
     """
     Read all the scripts from a file.
     """
     scripts = []
+    scripts_names = {}
     script = []
     in_script = False
+    in_script_name = None
     try:
         with open(script_file, 'r', encoding='utf-8') as f:
             for line in f.readlines():
                 line = line.rstrip()
                 if re.match(r'^%', line):
                     continue
-                if re.match(r'^#page\s*', line):
+                m = re.match(r'^#page\s*(?P<name>\s+[a-zA-Z_]+([1-9]\d*)?)?\s*$', line)
+                if m != None:
                     if in_script:
+                        # The previous #page script is now fully read, save it
+                        if in_script_name != None:
+                            scripts_names[in_script_name] = len(scripts)
                         scripts.append(script)
+                    #print(m)
+                    name = m['name']
+                    #print(name)
+                    in_script_name = name.strip() if name != None else None
                     in_script = True
                     script = []
                     continue
@@ -111,10 +165,12 @@ def read_scripts(script_file, error):
                     error('In the script file, all text should be after a "#page" block')
                 script.append(line)
             if in_script:
+                if in_script_name != None:
+                    scripts_names[in_script_name] = len(scripts)
                 scripts.append(script)
     except IOError:
         error(f'Could not read the script file "{script_file}"')
-    return scripts
+    return (scripts, scripts_names)
 
 
 def script_to_ssml_and_hash(script, args):
@@ -172,7 +228,9 @@ if __name__ == '__main__':
     p.add_argument('--quiet', action='store_true',
                    help='do not print progress information')
     p.add_argument('--pages', metavar='P', default='all',
-                   help='the page range of form "1,3,4-7,1"')
+                   help='The PDF page range of the form "1,3,4-7,1". Defines the one-to-one correspondence between the #page texts in the script file and the selected PDF pages.')
+    p.add_argument('--only', metavar='O', default='the full set',
+                   help='Only compile the selected #page texts. Used mainly during the development to select some of the #pages. A comma-sepated set of #page identifies, which can be (i) numbers, (ii) #page names, or (iii) ranges of of those. Example: "1,usage,scripts_1-2" compiles the first #page, the ones named usage, scripts_1, and scripts_2.')
     #p.add_argument('--output', metavar='O', default='video.mp4',
     #               help="the output file")
     p.add_argument('pdf_file', help="the input PDF file")
@@ -188,6 +246,7 @@ if __name__ == '__main__':
     temp_ssml_files = []
     temp_ts_files = []
     def unlink(file_name):
+        if file_name == None: return
         try: os.unlink(file_name)
         except FileNotFoundError: pass
     def clean_temps():
@@ -228,16 +287,20 @@ if __name__ == '__main__':
         if args.voice not in voices_conversational:
             error(f'voice {args.voice} is not available in conversational style. The available conversational voices are {", ".join(voices_conversational)}.')
 
-    scripts = read_scripts(args.script_file, error)
+    (scripts, scripts_names) = read_scripts(args.script_file, error)
 
     make_dir(args.audio_cache)
     
     if len(scripts) != len(pages):
         error(f'{len(pages)} PDF pages selected but the script file contains {len(scripts)} scripts')
 
+    only = parse_only(args, scripts, scripts_names, error)
 
     # Select and convert selected pages to images
     for (index, page_num) in enumerate(pages):
+        if index not in only:
+            temp_image_files.append(None)
+            continue
         verbose(f'Extracting and converting PDF page {page_num}')
         image_file = f'{args.temp_prefix}-{index+1}'
         temp_image_files.append(image_file+".ppm")
@@ -249,6 +312,14 @@ if __name__ == '__main__':
     marks_files = []
     profile_arg = '' if args.aws_profile == 'default' else f'--profile {args.aws_profile}'
     for (index, script) in enumerate(scripts):
+        if index not in only:
+            temp_ssml_files.append(None)
+            audio_files.append(None)
+            marks_files.append(None)
+            continue
+        #
+        # Audio track
+        #
         verbose('Making the audio track %d' % (index+1))
         (ssml, hash_hex) = script_to_ssml_and_hash(script, args)
         ssml_file = f'{args.temp_prefix}-{index+1}.ssml'
@@ -271,6 +342,9 @@ if __name__ == '__main__':
             cmd += f' {audio_file}'
             execute(cmd)
         audio_files.append(audio_file)
+        #
+        # Speech marks for subtitles
+        #
         if not args.ignore_subtitles:
             # Use Polly to generate the speech marks JSON file if not in cache
             if os.path.isfile(marks_file):
@@ -288,6 +362,7 @@ if __name__ == '__main__':
         # Make srt subtitles
         #
         for (index, script) in enumerate(scripts):
+            if index not in only: continue
             # Read the speech marks, keep only the start and end-of-the-line marks
             marks_file = marks_files[index]
             starts = {}
@@ -325,6 +400,7 @@ if __name__ == '__main__':
                 
     # Combine images and audios to transport streams
     for (index, page_num) in enumerate(pages):
+        if index not in only: continue
         verbose(f'Combining PDF page and audio: {index+1}')
         ts_file = f'{args.temp_prefix}-{index+1}.mp4'
         temp_ts_files.append(ts_file)
