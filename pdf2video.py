@@ -101,6 +101,7 @@ def parse_only(args, scripts, scripts_names, error):
         return only
     # --only parameter was given, parse it
     for comp in [c.strip() for c in args.only.split(",")]:
+        # Single number
         m = re.match(r'^[1-9]\d*$', comp)
         if m:
             num = int(m.group(0))
@@ -108,6 +109,18 @@ def parse_only(args, scripts, scripts_names, error):
                 error(f'#page {num} was selected in --only, but only {len(scripts)} #pages exists')
             only.add(num-1)
             continue
+        # Numeric range
+        m = re.match(r'^([1-9]\d*)\s*-\s*([1-9]\d*)$', comp)
+        if m:
+            (start,end) = (int(m.group(1)), int(m.group(2)))
+            length = end - start + 1
+            if length > 0 and length < 10000:
+                for num in range(start, end+1):
+                    if not(num <= len(scripts)):
+                        error(f'#page {num} was selected in --only, but only {len(scripts)} #pages exists')
+                    only.add(num-1)
+                continue
+        # Single name
         m = re.match(r'^[a-zA-Z_]+([1-9]\d*)?$', comp)
         if m:
             name = m.group(0)
@@ -115,6 +128,7 @@ def parse_only(args, scripts, scripts_names, error):
                 error(f'#page named "{name}" was selected in --only, but there is no #page with that name. Available #page names are: {",".join(sorted(scripts_names.keys()))}')
             only.add(scripts_names[name])
             continue
+        # name range
         m = re.match(r'^([a-zA-Z_]+)([1-9]\d*)-([1-9]\d*)$', comp)
         if m:
             (base,start,end) = (m.group(1),int(m.group(2)),int(m.group(3)))
