@@ -152,6 +152,8 @@ def read_scripts(script_file, error):
                     if in_script:
                         # The previous #page script is now fully read, save it
                         if in_script_name != None:
+                            if in_script_name in scripts_names:
+                                error(f'#page named "{in_script_name}" defined twice')
                             scripts_names[in_script_name] = len(scripts)
                         scripts.append(script)
                     #print(m)
@@ -161,11 +163,15 @@ def read_scripts(script_file, error):
                     in_script = True
                     script = []
                     continue
+                if line.startswith("#page"):
+                    error("Malformed #page line: "+line)
                 if not in_script:
                     error('In the script file, all text should be after a "#page" block')
                 script.append(line)
             if in_script:
                 if in_script_name != None:
+                    if in_script_name in scripts_names:
+                        error(f'#page named "{in_script_name}" defined twice')
                     scripts_names[in_script_name] = len(scripts)
                 scripts.append(script)
     except IOError:
