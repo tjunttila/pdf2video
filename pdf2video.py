@@ -248,7 +248,7 @@ if __name__ == '__main__':
     p.add_argument('--quiet', action='store_true',
                    help='do not print progress information')
     p.add_argument('--pages', metavar='P', default='all',
-                   help='The PDF page range of the form "1,3,4-7,1". Defines the one-to-one correspondence between the #page texts in the script file and the selected PDF pages.')
+                   help='The PDF page range of the form "1,3,4-7,1". Defines the injective mapping from the #page texts in the script file to selected PDF pages.')
     p.add_argument('--only', metavar='O', default='the full set',
                    help='Only compile the selected #page texts. Used mainly during the development to select some of the #pages. A comma-sepated set of #page identifies, which can be (i) numbers, (ii) #page names, or (iii) ranges of of those. Example: "1,usage,scripts_1-2" compiles the first #page, the ones named usage, scripts_1, and scripts_2.')
     #p.add_argument('--output', metavar='O', default='video.mp4',
