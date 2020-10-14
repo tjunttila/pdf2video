@@ -86,6 +86,18 @@ class ASTSub(AST):
         return result
     def to_sub(self):
         return self.subtitles
+class ASTSlow(AST):
+    def __init__(self, children):
+        self.children = children
+    def to_ssml(self, neural):
+        children_ssml = "".join([child.to_ssml(neural) for child in self.children])
+        return '<prosody rate="80%">'+children_ssml+'</prosody>'
+    def to_words(self):
+        result = []
+        for child in self.children: result += child.to_words()
+        return result
+    def to_sub(self):
+        return "".join([child.to_sub() for child in self.children])
 class ASTLow(AST):
     def __init__(self, children):
         self.children = children
@@ -149,6 +161,14 @@ def parse_(string):
                     err(f'Malformed #sub "{string[i:]}"')
                 t = parse_(m['text'])
                 result.append(ASTSub(t, m['sub']))
+                i += len(m.group(0))
+                continue
+            if string[i:i+5] == '#slow':
+                m = re.match('^#slow(.)(?P<text>((?!\1).)+?)\\1', string[i:])
+                if m == None:
+                    err(f'Malformed #slow "{string[i:]}"')
+                t = parse_(m['text'])
+                result.append(ASTSlow(t))
                 i += len(m.group(0))
                 continue
             if string[i:i+4] == '#low':

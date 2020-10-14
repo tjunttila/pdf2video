@@ -10,6 +10,8 @@ It can be used to generate, for instance, educational videos.
 
 Please see this [sample video](https://users.aalto.fi/tjunttil/pdf2video.mp4),
 produced with the tool, for a short introduction.
+Observe that some browsers don't show the subtitles embedded in MP4 videos,
+please see this [sample video with WebVTT subtitles](https://users.aalto.fi/tjunttil/pdf2video.html) in such as case.
 
 # Requirements
 
@@ -50,6 +52,7 @@ In the script text, one can use the following modifiers:
 
 * `*text*` to read `text` in an emphasized style,
 * `@xyz@` to spell `xyz` as characters,
+* `#slow/text/` to read `text` in a slower rate,
 * `#high/text/` to use higher pitch for `text`,
 * `#low/text/` to use lower pitch for `text`,
 * `#n`, where `n` is a positive integer, to have a pause of length of `n`*100ms,
