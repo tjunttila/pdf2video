@@ -62,10 +62,18 @@ In the script text, one can use the following modifiers:
 Above, the `/` delimiter can be any other symbol not occurring in the "arguments" of the modifier.
 This allows one to nest modifiers.
 For instance,
-`#sub/big-#ph!Theta!Ti:t! of @n@/Θ(n)/`
+`#sub/big-#ph!Theta!Ti:.t@! of n/Θ(n)/`
 reads as "big-theta of n" but shows as `Θ(n)` in the subtitles.
 
 Please see the file [sample.txt](sample.txt) file for examples.
+
+
+# Some good practices and hints
+
+* Converting a script with many pages to video can take some time. For developing and debugging the script text, it is recommended to name the script pages with `#page pagename`, and then use the `--only` option of the tool to convert only the page under development.
+* For pronunciations, one can find [IPA](https://en.wikipedia.org/wiki/International_Phonetic_Alphabet) pronunciations in many online dictionaries, and then convert them to X-SAMPA by using the table in the [X-SAMPA Wikipedia page](https://en.wikipedia.org/wiki/X-SAMPA).
+* Whenever possible, avoid using the `@xyz@` construct as it seems to change the pitch of the whole sentence.
+
 
 # License
 

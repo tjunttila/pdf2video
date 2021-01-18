@@ -244,16 +244,3 @@ def parse(string, neural):
         words += node.to_words()
     sub = "".join([node.to_sub() for node in ast])
     return (ssml, words, sub)
-    
-#if __name__ == '__main__':
-#    ast = parse("#sub#*@NP@-complete problem*#NPC problem#, Fourier-Motzkin")
-#    print(ast)
-#    print(">"+"".join([node.to_ssml(True) for node in ast])+"<")
-#    words = []
-#    for node in ast:
-#        words += node.to_words()
-#    print(words)
-#
-#    sub = "".join([node.to_sub() for node in ast])
-#    print(sub)
-#    #print(ast.to_sub())

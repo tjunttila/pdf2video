@@ -160,6 +160,7 @@ def read_scripts(script_file, error):
             for line in f.readlines():
                 line = line.rstrip()
                 if re.match(r'^%', line):
+                    # Lines starting with % are comments, skip them
                     continue
                 m = re.match(r'^#page\s*(?P<name>\s+[a-zA-Z_]+([1-9]\d*)?)?\s*$', line)
                 if m != None:
