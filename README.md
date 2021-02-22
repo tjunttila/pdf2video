@@ -1,6 +1,6 @@
 # Description
 
-`pdf2video.py` is a Python script that combines
+`pdf2video` is a Python script that combines
 
 * (selected pages of) a [PDF](https://en.wikipedia.org/wiki/PDF) presentation, and
 * a text script
@@ -15,19 +15,35 @@ please see this [sample video with WebVTT subtitles](https://users.aalto.fi/tjun
 
 # Requirements
 
-Using `pdf2video.py` requires the following external tools and services:
+Using `pdf2video` requires the following external tools and services:
 
 * [Python](https://www.python.org/) version 3.6 or later.
-* The `pdfinfo` and `pdftoppm` command line tools provided in the [poppler PDF rendering library](https://poppler.freedesktop.org/). In Ubuntu Linux, you can install these with `sudo apt get poppler-utils`.
-* The `ffmpeg` command line tool from the [`FFmpeg`](https://ffmpeg.org/) framework. In Ubuntu Linux, you can install these with `sudo apt get ffmpeg`.
+* The `pdfinfo` and `pdftoppm` command line tools provided in the [poppler PDF rendering library](https://poppler.freedesktop.org/).
+  
+  In Ubuntu Linux, you can install these with `sudo apt get poppler-utils`.
+  
+  For macOs, they are available at least from [Homebrew](https://brew.sh/) with `brew install poppler`.
+* The `ffmpeg` command line tool from the [`FFmpeg`](https://ffmpeg.org/) framework.
+  
+  In Ubuntu Linux, you can install it with `sudo apt get ffmpeg`.
+  
+  For macOs, it is available at least from [Homebrew](https://brew.sh/) with `brew install ffmpeg`.
 * Access to [Amazon Web Services](https://aws.amazon.com/).
 * The [AWS Command Line Interface](https://aws.amazon.com/cli/) configured with a [profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html) that can access the Polly service. To use the [neural voices](https://docs.aws.amazon.com/polly/latest/dg/ntts-voices-main.html) (recommended for the best quality), remember to select [a region in which they are supported](https://docs.aws.amazon.com/polly/latest/dg/NTTS-main.html).
+
+# Installation
+
+One can use `pip` to install `pdf2video` directly from GitHub:
+```
+python3 -m pip install https://github.com/tjunttila/pdf2video.git
+```
+See the [PyPA Installing Packages tutorial](https://packaging.python.org/tutorials/installing-packages/) if you are not familiar with installing Python packages.
 
 # Usage
 
 In the simplest case,
 ```
-python3 pdf2video.py presentation.pdf script.txt video.mp4
+pdf2video presentation.pdf script.txt video.mp4
 ```
 converts the PDF file  `presentation.pdf` and
 the UTF-8 encoded script file `script.txt`
@@ -38,9 +54,9 @@ In addition, for HTML use, [WebVTT subtitles](https://www.w3schools.com/tags/tag
 The selected PDF pages as well as the narration voice can be changed easily.
 For instance, the [sample video](https://users.aalto.fi/tjunttil/pdf2video.mp4) was produced with the command
 ```
-python3 pdf2video.py sample.pdf sample.txt --pages "1,2,4-6" --voice Matthew --neural --conversational sample.mp4
+pdf2video sample.pdf sample.txt --pages "1,2,4-6" --voice Matthew --neural --conversational sample.mp4
 ```
-All the options can be printed with `python3 pdf2video.py --help`.
+All the options can be printed with `pdf2video --help`.
 
 The script file is formatted as follows.
 The script for each presentation page starts with a line `#page [name]` and
@@ -77,4 +93,4 @@ Please see the file [sample.txt](sample.txt) file for examples.
 
 # License
 
-The `pdf2video.py` tool is relased under the [MIT License](https://opensource.org/licenses/MIT).
+The `pdf2video` tool is relased under the [MIT License](https://opensource.org/licenses/MIT).

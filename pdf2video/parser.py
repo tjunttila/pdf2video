@@ -1,5 +1,8 @@
-# Author: T. Junttila
-# License: The MIT License
+"""
+Parser for pdf2video script file syntax.
+Author: T. Junttila
+License: The MIT License
+"""
 
 import re
 
@@ -141,7 +144,8 @@ class ASTSayAs(AST):
         return self.letters
 
 
-def parse_(string):
+def parse_to_ast(string, err_linenum = None):
+    """Parse the script text string into a sequence of AST nodes."""
     i = 0
     n = len(string)
     def read_until(chars):
@@ -151,7 +155,10 @@ def parse_(string):
             i += 1
         return string[tmp:i]
     def err(msg):
-        assert False, msg
+        ln = f'On line {err_linenum}: ' if err_linenum != None else ''
+        print(ln+msg)
+        exit(1)
+        #assert False, msg
     result = []
     while i < n:
         if string[i] == '#':
@@ -159,7 +166,7 @@ def parse_(string):
                 m = re.match('^#sub(.)(?P<text>((?!\1).)*?)\\1(?P<sub>((?!\1).)+?)\\1', string[i:])
                 if m == None:
                     err(f'Malformed #sub "{string[i:]}"')
-                t = parse_(m['text'])
+                t = parse_to_ast(m['text'])
                 result.append(ASTSub(t, m['sub']))
                 i += len(m.group(0))
                 continue
@@ -167,7 +174,7 @@ def parse_(string):
                 m = re.match('^#slow(.)(?P<text>((?!\1).)+?)\\1', string[i:])
                 if m == None:
                     err(f'Malformed #slow "{string[i:]}"')
-                t = parse_(m['text'])
+                t = parse_to_ast(m['text'])
                 result.append(ASTSlow(t))
                 i += len(m.group(0))
                 continue
@@ -175,7 +182,7 @@ def parse_(string):
                 m = re.match('^#low(.)(?P<text>((?!\1).)+?)\\1', string[i:])
                 if m == None:
                     err(f'Malformed #low "{string[i:]}"')
-                t = parse_(m['text'])
+                t = parse_to_ast(m['text'])
                 result.append(ASTLow(t))
                 i += len(m.group(0))
                 continue
@@ -183,7 +190,7 @@ def parse_(string):
                 m = re.match('^#high(.)(?P<text>((?!\1).)+?)\\1', string[i:])
                 if m == None:
                     err(f'Malformed #high "{string[i:]}"')
-                t = parse_(m['text'])
+                t = parse_to_ast(m['text'])
                 result.append(ASTHigh(t))
                 i += len(m.group(0))
                 continue
@@ -200,12 +207,12 @@ def parse_(string):
                 result.append(ASTBreak(int(m['time'])))
                 i += len(m.group(0))
                 continue
-            err(f'Unrecognized command "{string[i:]}"')
+            err(f'Unrecognized script command "{string[i:]}"')
         elif string[i] == '*':
             m = re.match('^\*(?P<text>[^\*]+)\*', string[i:])
             if m == None:
                 err(f'Malformed emphasis "{string[i:]}"')
-            t = parse_(m['text'])
+            t = parse_to_ast(m['text'])
             result.append(ASTEmph(t))
             i += len(m.group(0))
         elif string[i] == '@':
@@ -237,7 +244,8 @@ def parse_(string):
     return result
 
 def parse(string, neural):
-    ast = parse_(string)
+    """Parse a script text line."""
+    ast = parse_to_ast(string)
     ssml = "".join([node.to_ssml(neural) for node in ast])
     words = []
     for node in ast:

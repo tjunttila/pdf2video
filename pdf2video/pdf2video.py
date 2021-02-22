@@ -1,11 +1,10 @@
 #!/usr/bin/python3
 
-# Author: T. Junttila
-# License: The MIT License
-
 """
 A small Python script for making videos by
 combining PDF and Amazon Polly narration.
+Author: T. Junttila
+License: The MIT License
 Requires:
 - pdfinfo
 - pdftoppm
@@ -22,10 +21,12 @@ import subprocess
 from subprocess import PIPE
 import sys
 
-import parser
+from .parser import *
 
 voices = ['Zeina', 'Zhiyu', 'Naja', 'Mads', 'Lotte', 'Ruben', 'Nicole', 'Russell', 'Amy', 'Emma', 'Brian', 'Aditi', 'Raveena', 'Ivy', 'Joanna', 'Kendra', 'Kimberly', 'Salli', 'Joey', 'Justin', 'Matthew', 'Geraint', 'Céline', 'Celine', 'Léa', 'Mathieu', 'Chantal', 'Marlene', 'Vicki', 'Hans', 'Aditi', 'Dóra', 'Dora', 'Karl', 'Carla', 'Bianca', 'Giorgio', 'Mizuki', 'Takumi', 'Seoyeon', 'Liv', 'Ewa', 'Maja', 'Jacek', 'Jan', 'Camila', 'Vitória', 'Vitoria', 'Ricardo', 'Inês', 'Ines', 'Cristiano', 'Carmen', 'Tatyana', 'Maxim', 'Conchita', 'Lucia', 'Enrique', 'Mia', 'Lupe', 'Penélope', 'Penelope', 'Miguel', 'Astrid', 'Filiz', 'Gwyneth']
+
 voices_neural = ['Amy', 'Emma', 'Brian', 'Ivy', 'Joanna', 'Kendra', 'Kimberly', 'Salli', 'Joey', 'Justin', 'Kevin', 'Matthew', 'Camila', 'Lupe']
+
 voices_conversational = ['Joanna', 'Matthew', 'Lupe']
 
 def millis_to_srt(millis):
@@ -59,7 +60,7 @@ def parse_page_range(args, execute, error):
     if args.pages == 'all':
         # --pages parameter was not given
         # Use pdfinfo to find out the number of pages, select all
-        r = execute(f'pdfinfo {args.pdf_file}')
+        r = execute(f'{args.pdfinfo} {args.pdf_file}')
         nof_pages = None
         for line in r.stdout.decode('utf-8').split('\n'):
             m = re.match('^Pages:\s*(\d+)\s*$', line)
@@ -157,18 +158,26 @@ def read_scripts(script_file, error):
     in_script_name = None
     try:
         with open(script_file, 'r', encoding='utf-8') as f:
+            linenum = 0
+            def err(msg):
+                error(f'on line {linenum}: {msg}')
             for line in f.readlines():
                 line = line.rstrip()
+                linenum += 1
+                if line == '':
+                    # Ignore empty lines
+                    continue
                 if re.match(r'^%', line):
                     # Lines starting with % are comments, skip them
                     continue
+                # A "#page" line starting a new page?
                 m = re.match(r'^#page\s*(?P<name>\s+[a-zA-Z_]+([1-9]\d*)?)?\s*$', line)
                 if m != None:
                     if in_script:
                         # The previous #page script is now fully read, save it
                         if in_script_name != None:
                             if in_script_name in scripts_names:
-                                error(f'#page named "{in_script_name}" defined twice')
+                                err(f'#page named "{in_script_name}" defined twice')
                             scripts_names[in_script_name] = len(scripts)
                         scripts.append(script)
                     #print(m)
@@ -179,14 +188,16 @@ def read_scripts(script_file, error):
                     script = []
                     continue
                 if line.startswith("#page"):
-                    error("Malformed #page line: "+line)
+                    err("Malformed #page line: "+line)
                 if not in_script:
-                    error('In the script file, all text should be after a "#page" block')
-                script.append(line)
+                    err('In the script file, all text should be after a "#page" block')
+                # Add the line to the current page
+                script.append((line, linenum))
+            # All lines read, add the last page
             if in_script:
                 if in_script_name != None:
                     if in_script_name in scripts_names:
-                        error(f'#page named "{in_script_name}" defined twice')
+                        err(f'#page named "{in_script_name}" defined twice')
                     scripts_names[in_script_name] = len(scripts)
                 scripts.append(script)
     except IOError:
@@ -197,8 +208,8 @@ def read_scripts(script_file, error):
 def script_to_ssml_and_hash(script, args):
     """
     Transform a script to SSML.
-    Return a hash of the voice, style, and the script as well for
-    caching audio files produced by the TTS system.
+    Also returns a hash of the voice, style, and the script
+    for caching audio files produced by the TTS system.
     """
     
     h = hashlib.sha256()
@@ -211,15 +222,15 @@ def script_to_ssml_and_hash(script, args):
     if args.conversational:
         ssml += '<amazon:domain name="conversational">'
     ssml += '\n'
-    for (linenum,line) in enumerate(script):
-        ast = parser.parse_(line)
+    for (page_linenum, (line,linenum)) in enumerate(script):
+        ast = parse_to_ast(line, linenum)
         l_ssml = ''
         # Start-of-the-line marks for subtitle synchronization
-        l_ssml += f'<mark name="s{linenum}"/>'
+        l_ssml += f'<mark name="s{page_linenum}"/>'
         # Line contents in SSML
         l_ssml += ''.join([node.to_ssml(args.neural) for node in ast])+'\n'
         # End-of-the-line marks for subtitle synchronization
-        l_ssml += f'<mark name="e{linenum}"/>'
+        l_ssml += f'<mark name="e{page_linenum}"/>'
         ssml += l_ssml
         h.update(l_ssml.encode('utf-8')) 
     if args.conversational:
@@ -229,20 +240,20 @@ def script_to_ssml_and_hash(script, args):
     return (ssml, h.hexdigest())
 
 
-
-if __name__ == '__main__':
-    p = argparse.ArgumentParser(formatter_class = argparse.ArgumentDefaultsHelpFormatter)
+def main():
+    description = "A tool for converting PDF presentations into narrated videos. Please see https://github.com/tjunttila/pdf2video/ for more details."
+    p = argparse.ArgumentParser(formatter_class = argparse.ArgumentDefaultsHelpFormatter, description = description)
     p.add_argument('--voice', metavar='V', default='Joanna',
                    help='the applied TTS voice')
     p.add_argument('--neural', action='store_true',
                    help='use neural TTS')
     p.add_argument('--conversational', action='store_true',
                    help='use conversational style')
-    p.add_argument('--aws_profile', metavar='P', default='default',
+    p.add_argument('--aws_profile', metavar='A', default='default',
                    help='a Polly-enabled AWS profile')
-    p.add_argument('--audio_cache', metavar='A', default='pdf2video-cache',
+    p.add_argument('--audio_cache', metavar='C', default='pdf2video-cache',
                    help='the directory for caching TTS audio files')
-    p.add_argument('--temp_prefix', metavar='T', default='temp',
+    p.add_argument('--temp_prefix', metavar='T', default='pdf2video-temp',
                    help='the prefix for the created temporary files')
     p.add_argument('--ignore_subtitles', action='store_true',
                    help='do not include or produce subtitles')
@@ -254,6 +265,12 @@ if __name__ == '__main__':
                    help='Only compile the selected #page texts. Used mainly during the development to select some of the #pages. A comma-sepated set of #page identifies, which can be (i) numbers, (ii) #page names, or (iii) ranges of of those. Example: "1,usage,scripts_1-2" compiles the first #page, the ones named usage, scripts_1, and scripts_2.')
     #p.add_argument('--output', metavar='O', default='video.mp4',
     #               help="the output file")
+    p.add_argument('--ffmpeg', default='ffmpeg',
+                   help='the FFmpeg command line tool executable')
+    p.add_argument('--pdfinfo', default='pdfinfo',
+                   help='the "pdfinfo" executable from Poppler utils')
+    p.add_argument('--pdftoppm', default='pdftoppm',
+                   help='the "pdftoppm" executable from Poppler utils')
     p.add_argument('pdf_file', help="the input PDF file")
     p.add_argument('script_file', help="the input script file")
     p.add_argument('output_file', help="the output mp4 video file")
@@ -293,6 +310,7 @@ if __name__ == '__main__':
                 error("Not a directory: "+dir_name)
         else: os.mkdir(dir_name)
 
+
     if not args.output_file.endswith(".mp4"):
         error("The output file name must end with .mp4")
     
@@ -325,7 +343,7 @@ if __name__ == '__main__':
         verbose(f'Extracting and converting PDF page {page_num}')
         image_file = f'{args.temp_prefix}-{index+1}'
         temp_image_files.append(image_file+".ppm")
-        cmd = f'pdftoppm -scale-to-y 1080 -scale-to-x -1 -f {page_num} -singlefile {args.pdf_file} {image_file}'
+        cmd = f'{args.pdftoppm} -scale-to-y 1080 -scale-to-x -1 -f {page_num} -singlefile {args.pdf_file} {image_file}'
         execute(cmd)
 
     # Make audio files with AWS Polly (cache the results)
@@ -402,12 +420,12 @@ if __name__ == '__main__':
             #print(ends)
             srts = []
             index = 0
-            for (linenum,line) in enumerate(script):
-                #print(linenum, line)
+            for (page_linenum, (line, linenum)) in enumerate(script):
+                #print(page_linenum, line)
                 if line.strip() == '': continue
-                start = starts[linenum]
-                end = ends[linenum]
-                (dummy, words, sub) = parser.parse(line, args.neural)
+                start = starts[page_linenum]
+                end = ends[page_linenum]
+                (dummy, words, sub) = parse(line, args.neural)
                 if len(words) == 0: continue
                 srts.append({'start': start, 'end': end, 'text': sub})
 
@@ -426,7 +444,7 @@ if __name__ == '__main__':
         ts_file = f'{args.temp_prefix}-{index+1}.mp4'
         temp_ts_files.append(ts_file)
         audio_file = audio_files[index]
-        cmd = f'ffmpeg -y -loop 1 -i {temp_image_files[index]} -i {audio_file} -shortest -c:v libx264 -vf scale=-2:1080,format=yuv420p -c:a copy -tune stillimage d{ts_file}'
+        cmd = f'{args.ffmpeg} -y -loop 1 -i {temp_image_files[index]} -i {audio_file} -shortest -c:v libx264 -vf scale=-2:1080,format=yuv420p -c:a copy -tune stillimage d{ts_file}'
         execute(cmd)
         if args.ignore_subtitles:
             os.rename(f'd{ts_file}', f'{ts_file}')            
@@ -436,8 +454,8 @@ if __name__ == '__main__':
             if os.stat(srt_file).st_size == 0:
                 os.rename(f'd{ts_file}', f'{ts_file}')
             else:
-                #ffmpeg -i infile.mp4 -i infile.srt -c copy -c:s mov_text outfile.mp4
-                cmd = f'ffmpeg -y -i d{ts_file} -i {srt_file} -c copy -c:s mov_text -metadata:s:s:0 language=eng {ts_file}'
+                #{args.ffmpeg} -i infile.mp4 -i infile.srt -c copy -c:s mov_text outfile.mp4
+                cmd = f'{args.ffmpeg} -y -i d{ts_file} -i {srt_file} -c copy -c:s mov_text -metadata:s:s:0 language=eng {ts_file}'
                 execute(cmd)
                 unlink(f'd{ts_file}')
         
@@ -447,15 +465,19 @@ if __name__ == '__main__':
     with open(lst_file, 'w', encoding='utf-8') as f:
         for ts_file in temp_ts_files:
             f.write(f'file {ts_file}\n')
-    cmd = f'ffmpeg -y -f concat -i {lst_file} -c:v copy -c:a aac -c:s copy -strict -2 {args.output_file}'
+    cmd = f'{args.ffmpeg} -y -f concat -i {lst_file} -c:v copy -c:a aac -c:s copy -strict -2 {args.output_file}'
     execute(cmd)
 
     if not args.ignore_subtitles:
         # Produce the WebVTT subtitles (for HTML)
         vtt_file = args.output_file[:-4]+'.vtt'
         verbose(f'Producing WebVTT subtitles at "{vtt_file}"')
-        cmd = f'ffmpeg -y -i {args.output_file} {vtt_file}'
+        cmd = f'{args.ffmpeg} -y -i {args.output_file} {vtt_file}'
         execute(cmd)
 
     clean_temps()
     exit(0)
+
+
+if __name__ == '__main__':
+    main()
