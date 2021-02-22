@@ -35,7 +35,7 @@ Using `pdf2video` requires the following external tools and services:
 
 One can use `pip` to install `pdf2video` directly from GitHub:
 ```
-python3 -m pip install https://github.com/tjunttila/pdf2video.git
+python3 -m pip install git+https://github.com/tjunttila/pdf2video.git
 ```
 See the [PyPA Installing Packages tutorial](https://packaging.python.org/tutorials/installing-packages/) if you are not familiar with installing Python packages.
 
