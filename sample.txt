@@ -4,7 +4,6 @@ This video is produced automatically with the tool.
 You can find more details in the GitHub page of the project.
 #20
 
-
 #page motivation
 Need to make videos of your PDF presentations?
 Tired in spending *hours* in recording and editing the audio tracks?
@@ -40,6 +39,7 @@ with the command shown in the slide.
 One can find the sample PDF and script files
 in the GitHub repository of the project.
 #30
+
 #page scripts_1
 The script files are rather simple text files.
 They should be easy to produce with *any* text editor.

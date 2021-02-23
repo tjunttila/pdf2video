@@ -1,12 +1,11 @@
 import setuptools
-from setuptools import setup
 
 with open("README.md", "r", encoding="utf-8") as f:
     long_description = f.read()
 
 setuptools.setup(
     name="pdf2video", # Replace with your own username
-    version="0.2.0",
+    version="0.2.1",
     author="T. Junttila",
     author_email="Tommi.Junttila@aalto.fi",
     description="A tool for making narrated videos from PDF presentations.",
